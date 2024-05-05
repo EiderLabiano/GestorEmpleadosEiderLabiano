@@ -101,11 +101,11 @@ public class Trabajador implements Initializable {
     }
 
     public void parsearLinea() {
-        File fichero = new File("src/main/resources/com/example/gestorenpleadosinigocembo/ArchivosTXT/trabajadores.txt");
+        File fichero = new File("src/main/resources/com/example/gestorempleadoseiderlabiano/trabajadores (1).txt");
         try {
             Connection miConexion = null;
             miConexion = conectarBBDD();
-            PreparedStatement statmen = miConexion.prepareStatement("insert into Empleado (nombbre, puesto, salario, fecha) values (?,?,?,now())");
+            PreparedStatement statmen = miConexion.prepareStatement("insert into Empleado (nombre, puesto, salario, fecha) values (?,?,?,now())");
             Scanner scanner = new Scanner(fichero);
             while (scanner.hasNext())
             {
@@ -126,12 +126,7 @@ public class Trabajador implements Initializable {
         }
     }
 
-    public void listView() {
-        ArrayList<String> entrada = addNombre();
-        for (String s : entrada) {
-            consultText.getItems().add(s);
-        }
-    }
+
 
     public ArrayList<String> addNombre() {
         ArrayList<String> name = new ArrayList<>();
