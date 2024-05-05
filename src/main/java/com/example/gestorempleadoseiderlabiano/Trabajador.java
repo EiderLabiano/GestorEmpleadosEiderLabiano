@@ -1,5 +1,7 @@
 package com.example.gestorempleadoseiderlabiano;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -43,7 +45,15 @@ public class Trabajador implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        poschoice.setItems(FXCollections.observableArrayList("Scada Manager", "Sales Manager", "Product Owner", "Product Manager", "Analyst ProgrammerAnalyst Programmer", "Junior Programmer"));
+        poschoice.setItems(FXCollections.observableArrayList("Scada Manager", "Sales Manager", "Product Owner",
+                "Product Manager", "Analyst ProgrammerAnalyst Programmer", "Junior Programmer"));
+        consultText.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observableValue, String s, String t1) {
+                String empelados = consultText.getSelectionModel().getSelectedItem();
+                selectData(empelados);
+            }
+        });
     }
 
 
@@ -59,8 +69,9 @@ public class Trabajador implements Initializable {
         if (nameText.getText().isEmpty() || salaryText.getText().isEmpty() || poschoice.getItems().isEmpty()) {
             error();
         } else {
-            insertar();
-            anyadirTrabajador();
+            if (insertar()) {
+                anyadirTrabajador();
+            }
         }
     }
 
@@ -72,36 +83,14 @@ public class Trabajador implements Initializable {
         alert.show();
     }
 
-    public void insertar() {
-        Connection miConexion = null;
-        try {
-            miConexion = conectarBBDD();
-            PreparedStatement statmen = miConexion.prepareStatement("insert into Empleado (nombre, puesto, salario, fecha) values (?,?,?,now())");
-            statmen.setString(1, nameText.getText());
-            statmen.setString(2, poschoice.getValue());
-            statmen.setInt(3, Integer.parseInt(salaryText.getText()));
-            statmen.executeUpdate();
-        } catch (SQLException e) {
-            System.out.println("No funciona la conexion");
-        } finally {
-            if (miConexion != null) {
-                try {
-                    miConexion.close();
-                } catch (SQLException e) {
-                    System.out.println("Error al cerrar");
-                }
-            }
-        }
-    }
-
     public Connection conectarBBDD() {
-        String url = "jdbc:mysql://localhost:3306/gestorEmpleados";
+        String direccion = "jdbc:mysql://localhost:3306/gestorEmpleados";
         String usuario = "root";
         String contrasenya = "root";
         Connection conexion = null;
 
         try {
-            conexion = DriverManager.getConnection(url, usuario, contrasenya);
+            conexion = DriverManager.getConnection(direccion, usuario, contrasenya);
             if (conexion != null) {
                 return conexion;
             }
@@ -112,18 +101,28 @@ public class Trabajador implements Initializable {
     }
 
     public void parsearLinea() {
-        File miFichero = new File("src/main/resources/com/example/gestorempleadoseiderlabiano/trabajadores (1).txt");
+        File fichero = new File("src/main/resources/com/example/gestorenpleadosinigocembo/ArchivosTXT/trabajadores.txt");
         try {
-            Scanner miScaner = new Scanner(miFichero);
-            while (miScaner.hasNext()) {
+            Connection miConexion = null;
+            miConexion = conectarBBDD();
+            PreparedStatement statmen = miConexion.prepareStatement("insert into Empleado (nombbre, puesto, salario, fecha) values (?,?,?,now())");
+            Scanner scanner = new Scanner(fichero);
+            while (scanner.hasNext())
+            {
                 String[] trabajador;
-                trabajador = miScaner.nextLine().split(";");
-                String Nombre = trabajador[0];
-                String Puesto = trabajador[1];
+                trabajador = scanner.nextLine().split(";");
+                String Nombre =trabajador[0];
+                String Puesto =trabajador[1];
                 int Salario = Integer.parseInt(trabajador[2]);
+                statmen.setString(1, Nombre);
+                statmen.setString(2, Puesto);
+                statmen.setInt(3, Salario);
+                statmen.executeUpdate();
             }
         } catch (FileNotFoundException e) {
             System.out.println("No se encuentra el archivo");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -135,46 +134,97 @@ public class Trabajador implements Initializable {
     }
 
     public ArrayList<String> addNombre() {
-        ArrayList<String> nombres = new ArrayList<>();
+        ArrayList<String> name = new ArrayList<>();
         try {
             Connection conect = conectarBBDD();
             Statement miStatment = conect.createStatement();
             ResultSet resul = miStatment.executeQuery("select nombre from Empleado");
-            while (resul.next()) {
-                nombres.add(resul.getString("NOMBRE"));
+            while (resul.next())
+            {
+                name.add(resul.getString("NOMBRE"));
             }
         } catch (SQLException e) {
             System.out.println("Error al conectar");
         }
-        return nombres;
+        return name;
+    }
+
+    public void refresh() {
+        try
+        {
+            Connection connection = conectarBBDD();
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery("select nombre from Empleado");
+            consultText.getItems().clear();
+            while (resultSet.next())
+            {
+                consultText.getItems().add(resultSet.getString("NOMBRE"));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al refrescar");
+        }
+    }
+    public boolean insertar() {
+        Connection miConexion = null;
+        try {
+            miConexion = conectarBBDD();
+            PreparedStatement statment = miConexion.prepareStatement("insert into Empleado (nombre, puesto, salario, fecha) values (?,?,?,now())");
+            statment.setString(1, nameText.getText());
+            statment.setString(2, poschoice.getValue());
+            try {
+                statment.setInt(3, Integer.parseInt(salaryText.getText()));
+            }
+            catch (NumberFormatException e)
+            {
+                System.out.println("Formato erroneo");
+                return false;
+            }
+            statment.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            System.out.println("No funciona la conexion");
+            return false;
+        } finally {
+            if (miConexion != null) {
+                try {
+                    miConexion.close();
+                } catch (SQLException e) {
+                    System.out.println("Error al cerrar");
+                }
+            }
+        }
+    }
+    public void eliminar() {
+        eliminarElegido(consultText.getSelectionModel().getSelectedItem());
+    }
+    public void selectData(String nombre)
+    {
+        try {
+            Connection connection = conectarBBDD();
+            PreparedStatement preparedStatement = connection.prepareStatement("select * from Empleado where nombre = ?");
+            preparedStatement.setString(1, nombre);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next())
+            {
+                idLabel.setText(resultSet.getString("ID"));
+                nameLabel.setText(resultSet.getString("NOMBRE"));
+                posLabel.setText(resultSet.getString("PUESTO"));
+                dateLabel.setText(resultSet.getString("FECHA"));
+                salaryLabel.setText(resultSet.getString("SALARIO"));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al Seleccionar");
+        }
     }
 
     public void eliminarElegido(String nombre) {
         try {
             Connection connection = conectarBBDD();
-            PreparedStatement preparedStatement = connection.prepareStatement("delete from Empleado where nombre = ?");
+            PreparedStatement preparedStatement = connection.prepareStatement("delete from empleado where nombre = ?");
             preparedStatement.setString(1, nombre);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             System.out.println("Error al Borrar");
-        }
-    }
-
-    public void eliminar() {
-        eliminarElegido(consultText.getSelectionModel().getSelectedItem());
-    }
-
-    public void refresh() {
-        try {
-            Connection connection = conectarBBDD();
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery("select nombre from Empleado");
-            consultText.getItems().clear();
-            while (resultSet.next()) {
-                consultText.getItems().add(resultSet.getString("NOMBRE"));
-            }
-        } catch (SQLException e) {
-            System.out.println("Error al refrescar");
         }
     }
 }
