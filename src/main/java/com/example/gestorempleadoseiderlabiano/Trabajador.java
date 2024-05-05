@@ -126,24 +126,6 @@ public class Trabajador implements Initializable {
         }
     }
 
-
-
-    public ArrayList<String> addNombre() {
-        ArrayList<String> name = new ArrayList<>();
-        try {
-            Connection conect = conectarBBDD();
-            Statement miStatment = conect.createStatement();
-            ResultSet resul = miStatment.executeQuery("select nombre from Empleado");
-            while (resul.next())
-            {
-                name.add(resul.getString("NOMBRE"));
-            }
-        } catch (SQLException e) {
-            System.out.println("Error al conectar");
-        }
-        return name;
-    }
-
     public void refresh() {
         try
         {
